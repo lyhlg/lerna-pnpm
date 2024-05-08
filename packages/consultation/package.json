@@ -22,5 +22,6 @@
   },
   "bugs": {
     "url": "https://github.com/lyhlg/lerna-pnpm/issues"
-  }
+  },
+  "gitHead": "b47532c89927d643df56a678a86fc0028c35f801"
 }
