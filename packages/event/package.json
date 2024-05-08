@@ -1,0 +1,26 @@
+{
+  "name": "event",
+  "version": "1.0.0",
+  "description": "> TODO: description",
+  "author": "Yonghyun Lee <lyhlg0201@gmail.com>",
+  "homepage": "https://github.com/lyhlg/lerna-pnpm#readme",
+  "license": "ISC",
+  "main": "lib/event.js",
+  "directories": {
+    "lib": "lib",
+    "test": "__tests__"
+  },
+  "files": [
+    "lib"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyhlg/lerna-pnpm.git"
+  },
+  "scripts": {
+    "test": "node ./__tests__/event.test.js"
+  },
+  "bugs": {
+    "url": "https://github.com/lyhlg/lerna-pnpm/issues"
+  }
+}
