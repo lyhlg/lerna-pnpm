@@ -14,13 +14,17 @@ declare -A changelog_groups
 
 # Parse each commit line
 while IFS= read -r line; do
-    # Extract the commit type and description
-    type=$(echo "$line" | cut -d ':' -f 1)
-    message=$(echo "$line" | sed -e "s/$type: //" | sed -e "s/ ([a-f0-9]+)$//")
-    commit_hash=$(echo "$line" | grep -o '(\w\+)$' | sed 's/[()]//g')
-    link="https://github.com/lyhlg/lerna-pnpmZ/commit/$commit_hash"
-    formatted_message="- $message ([#$commit_hash]($link))"
-    changelog_groups["$type"]+="$formatted_message\n"
+    if [[ "$line" == *":"* ]]; then
+        type=$(echo "$line" | cut -d ':' -f 1)
+        message=$(echo "$line" | sed -e "s/$type: //" | sed -e "s/ ([a-f0-9]+)$//")
+        commit_hash=$(echo "$line" | grep -o '(\w\+)$' | sed 's/[()]//g')
+        link="https://github.com/lyhlg/lerna-pnpm/commit/$commit_hash"
+        formatted_message="- $message ([#$commit_hash]($link))"
+        changelog_groups["$type"]+="$formatted_message\n"
+    else
+        # Handle commits that don't fit the expected format
+        changelog_groups["Uncategorized"]+="$line\n"
+    fi
 done <<< "$commits"
 
 # Output the formatted changelog
