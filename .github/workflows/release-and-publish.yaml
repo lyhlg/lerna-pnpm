@@ -28,35 +28,18 @@ jobs:
         id: latest-tag
         run: echo "::set-output name=tag::$(git describe --tags --abbrev=0)"
 
-      # Get commit messages since last release
-      - name: Get commits since last release
-        id: get-commits
-        run: |
-          COMMITS=$(git log ${{ steps.latest-tag.outputs.tag }}..main --format='%s (%an)')
-          FEATURES=$(echo "$COMMITS" | grep -E '^feat:' | sed 's/^/ - /')
-          FIXES=$(echo "$COMMITS" | grep -E '^fix:' | sed 's/^/ - /')
-          CHORES=$(echo "$COMMITS" | grep -E '^chore:' | sed 's/^/ - /')
-          echo "::set-output name=features::$FEATURES"
-          echo "::set-output name=fixes::$FIXES"
-          echo "::set-output name=chores::$CHORES"
+      # Install dependencies (assumes lerna-changelog is part of devDependencies)
+      - name: Install dependencies
+        run: npm install
 
-      # Update CHANGELOG.md
-      - name: Update CHANGELOG.md
-        run: |
-          # Store the existing content of CHANGELOG.md temporarily
-          mv CHANGELOG.md old-CHANGELOG.md
-          echo "## Changes since last release" > CHANGELOG.md
-          echo "### Features" >> CHANGELOG.md
-          echo "${{ steps.get-commits.outputs.features }}" >> CHANGELOG.md
-          echo "### Fixes" >> CHANGELOG.md
-          echo "${{ steps.get-commits.outputs.fixes }}" >> CHANGELOG.md
-          echo "### Chores" >> CHANGELOG.md
-          echo "${{ steps.get-commits.outputs.chores }}" >> CHANGELOG.md
-          echo "" >> CHANGELOG.md
-          cat old-CHANGELOG.md >> CHANGELOG.md
-          rm old-CHANGELOG.md
-          git add CHANGELOG.md
-          git commit -m "Prepend updates to CHANGELOG.md"
+      # Generate changelog from the latest tag to HEAD
+      - name: Generate changelog
+        id: changelog
+        run: echo "::set-output name=changelog::$(npx lerna-changelog --tag-from=${{ steps.latest-tag.outputs.tag }} --next-version Unreleased)"
+
+      # Print changelog (optional, for debug purposes)
+      - name: Print changelog
+        run: echo "${{ steps.changelog.outputs.changelog }}"
 
       # Push changes
       - name: Push changes
@@ -69,15 +52,5 @@ jobs:
           delete-branch: true
           title: "Release PR"
           branch: release-pr
-          body: |
-            This PR includes the changes for the next release.
-            ### Commits:
-            ### Commits:
-            - Features:
-              ${{ steps.get-commits.outputs.features }}
-            - Fixes:
-              ${{ steps.get-commits.outputs.fixes }}
-            - Chores:
-              ${{ steps.get-commits.outputs.chores }}
+          body: ${{ steps.changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
-
