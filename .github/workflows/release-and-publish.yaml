@@ -14,13 +14,13 @@ jobs:
     steps:
       # Checkout the code in the main branch
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Setup Git config
       - name: Setup Git
         run: |
-          git config --global user.email "dev@healingpaper.com"
-          git config --global user.name "ian"
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
 
       # Get latest release tag
       - name: Get latest release tag
@@ -31,15 +31,31 @@ jobs:
       - name: Get commits since last release
         id: get-commits
         run: |
-          echo "::set-output name=commits::$(git log ${{ steps.latest-tag.outputs.tag }}..main --format='* %s (%an)' --reverse)"
+          COMMITS=$(git log ${{ steps.latest-tag.outputs.tag }}..main --format='%s (%an)')
+          FEATURES=$(echo "$COMMITS" | grep -E '^feat:' | sed 's/^/ - /')
+          FIXES=$(echo "$COMMITS" | grep -E '^fix:' | sed 's/^/ - /')
+          CHORES=$(echo "$COMMITS" | grep -E '^chore:' | sed 's/^/ - /')
+          echo "::set-output name=features::$FEATURES"
+          echo "::set-output name=fixes::$FIXES"
+          echo "::set-output name=chores::$CHORES"
 
       # Update CHANGELOG.md
       - name: Update CHANGELOG.md
         run: |
-          echo "## Changes since last release" >> CHANGELOG.md
-          echo "${{ steps.get-commits.outputs.commits }}" >> CHANGELOG.md
+          # Store the existing content of CHANGELOG.md temporarily
+          mv CHANGELOG.md old-CHANGELOG.md
+          echo "## Changes since last release" > CHANGELOG.md
+          echo "### Features" >> CHANGELOG.md
+          echo "${{ steps.get-commits.outputs.features }}" >> CHANGELOG.md
+          echo "### Fixes" >> CHANGELOG.md
+          echo "${{ steps.get-commits.outputs.fixes }}" >> CHANGELOG.md
+          echo "### Chores" >> CHANGELOG.md
+          echo "${{ steps.get-commits.outputs.chores }}" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          cat old-CHANGELOG.md >> CHANGELOG.md
+          rm old-CHANGELOG.md
           git add CHANGELOG.md
-          git commit -m "Update CHANGELOG.md with new commits"
+          git commit -m "Prepend updates to CHANGELOG.md"
 
       # Push changes
       - name: Push changes
@@ -49,10 +65,18 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
-          destination_branch: "main"
+          delete-branch: true
           title: "Release PR"
+          branch: release-pr
           body: |
             This PR includes the changes for the next release.
             ### Commits:
-            ${{ steps.get-commits.outputs.commits }}
+            ### Commits:
+            - Features:
+              ${{ steps.get-commits.outputs.features }}
+            - Fixes:
+              ${{ steps.get-commits.outputs.fixes }}
+            - Chores:
+              ${{ steps.get-commits.outputs.chores }}
           token: ${{ secrets.GITHUB_TOKEN }}
+
