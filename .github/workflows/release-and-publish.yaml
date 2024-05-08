@@ -13,38 +13,35 @@ jobs:
   create-release-pr:
     runs-on: ubuntu-latest
     steps:
-      # Checkout the code in the main branch
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Setup Git config
       - name: Setup Git
         run: |
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
-
-      # Get latest release tag and write to environment file
-      - name: Get latest release tag
-        run: echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
         with:
           version: "9"
 
-      # Install dependencies (assumes lerna-changelog is part of devDependencies)
       - name: Install dependencies
         run: pnpm install
 
-      # Generate changelog from the latest tag to HEAD and write to environment file
-      - name: Generate Changelog based on Conventional Commits
-        uses: smichard/conventional_changelog@2.0.0
+      - name: Generate changelog from commits
+        run: ./generate_changelog.sh > CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-#      # Push changes
 #      - name: Push changes
 #        run: git push origin main
 
-      # Create Pull Request with changelog in the body
+      - name: Print environment variables
+        run: |
+          echo "Changelog:"
+          echo "$CHANGELOG"
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
