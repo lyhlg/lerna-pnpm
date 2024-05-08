@@ -23,34 +23,33 @@ jobs:
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
 
-      # Get latest release tag
+      # Get latest release tag and write to environment file
       - name: Get latest release tag
-        id: latest-tag
-        run: echo "::set-output name=tag::$(git describe --tags --abbrev=0)"
+        run: echo "LATEST_TAG=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: "9"
 
       # Install dependencies (assumes lerna-changelog is part of devDependencies)
       - name: Install dependencies
-        run: npm install
+        run: pnpm install
 
-      # Generate changelog from the latest tag to HEAD
-      - name: Generate changelog
-        id: changelog
-        run: echo "::set-output name=changelog::$(npx lerna-changelog --tag-from=${{ steps.latest-tag.outputs.tag }} --next-version Unreleased)"
+      # Generate changelog from the latest tag to HEAD and write to environment file
+      - name: Generate Changelog based on Conventional Commits
+        uses: smichard/conventional_changelog@2.0.0
 
-      # Print changelog (optional, for debug purposes)
-      - name: Print changelog
-        run: echo "${{ steps.changelog.outputs.changelog }}"
+#      # Push changes
+#      - name: Push changes
+#        run: git push origin main
 
-      # Push changes
-      - name: Push changes
-        run: git push origin main
-
-      # Create Pull Request
+      # Create Pull Request with changelog in the body
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
         with:
           delete-branch: true
           title: "Release PR"
           branch: release-pr
-          body: ${{ steps.changelog.outputs.changelog }}
+          body: ${{ env.CHANGELOG }}
           token: ${{ secrets.GITHUB_TOKEN }}
