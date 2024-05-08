@@ -3,5 +3,5 @@
 module.exports = consultation;
 
 function consultation() {
-  return 'Hello from consultation';
+  return 'Hello from consultation!';
 }
