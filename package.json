@@ -2,7 +2,10 @@
   "name": "lerna-monorepo",
   "version": "1.0.0",
   "description": "",
-  "repository": "https://github.com/lyhlg/lerna-monorepo.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lyhlg/lerna-monorepo.git"
+  },
   "main": "index.js",
   "private": true,
   "scripts": {
@@ -11,7 +14,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "dependencies": {},
+  "dependencies": {
+    "@changesets/cli": "^2.27.1"
+  },
   "devDependencies": {
     "lerna": "^8.1.2"
   }
