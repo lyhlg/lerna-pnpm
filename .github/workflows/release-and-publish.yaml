@@ -1,4 +1,4 @@
-name: Release Workflow
+name: Create Release PR
 
 on:
   push:
@@ -6,60 +6,50 @@ on:
       - main
 
 jobs:
-  update-changelog-and-create-release-pr:
-#    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    name: create release PR
+  create-release-pr:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
+      # Checkout the code in the main branch
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      # Setup Git config
+      - name: Setup Git
+        run: |
+          git config --global user.email "dev@healingpaper.com"
+          git config --global user.name "ian"
+
+      # Get latest release tag
+      - name: Get latest release tag
+        id: latest-tag
+        run: echo "::set-output name=tag::$(git describe --tags --abbrev=0)"
+
+      # Get commit messages since last release
+      - name: Get commits since last release
+        id: get-commits
+        run: |
+          echo "::set-output name=commits::$(git log ${{ steps.latest-tag.outputs.tag }}..main --format='* %s (%an)' --reverse)"
+
+      # Update CHANGELOG.md
+      - name: Update CHANGELOG.md
+        run: |
+          echo "## Changes since last release" >> CHANGELOG.md
+          echo "${{ steps.get-commits.outputs.commits }}" >> CHANGELOG.md
+          git add CHANGELOG.md
+          git commit -m "Update CHANGELOG.md with new commits"
+
+      # Push changes
+      - name: Push changes
+        run: git push origin main
+
+      # Create Pull Request
+      - name: Create Pull Request
+        uses: repo-sync/pull-request@v2
         with:
-          node-version: '20.x'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: "9"
-
-      - name: Install Dependencies with pnpm
-        run: pnpm install
-
-#      - name: Update Changelog
-#        run: pnpm run update-changelog
-
-      - name: Create Release Pull Request
-        uses: changesets/action@v1
-        with:
-          title: "chore(release): version packages 🦋"
-#          publish: pnpm publish:packages
-#          version: pnpm version:packages
-          commit: "chore(release): version packages 🦋 [skip ci]"
-#        with:
-#          publish: pnpm run release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-#  publish:
-#    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
-#    needs: update-changelog-and-create-release-pr
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout Repo
-#        uses: actions/checkout@v3
-#
-#      - name: Setup Node.js
-#        uses: actions/setup-node@v3
-#        with:
-#          node-version: '20.x'
-#          registry-url: 'https://registry.npmjs.org'
-#
-#      - name: Install Dependencies with pnpm
-#        run: pnpm install
-#
-#      - name: Publish to npm
-#        run: pnpm publish
-#        env:
-#          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          destination_branch: "main"
+          title: "Release PR"
+          body: |
+            This PR includes the changes for the next release.
+            ### Commits:
+            ${{ steps.get-commits.outputs.commits }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
