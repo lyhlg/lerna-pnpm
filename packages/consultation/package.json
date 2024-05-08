@@ -5,7 +5,6 @@
   "author": "Yonghyun Lee <lyhlg0201@gmail.com>",
   "homepage": "https://github.com/lyhlg/lerna-pnpm#readme",
   "license": "ISC",
-  "private": true,
   "main": "lib/consultation.js",
   "directories": {
     "lib": "lib",
